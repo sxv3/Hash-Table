@@ -1,113 +1,133 @@
-#include <cstring>
-#include <vector>
-#include <math.h>
+#include "Student.h"
+#include "Node.h"
+
 #include <iostream>
+#include <cstring>
 
-//StudentList, a simple program to store student data by Tai Wong
-//10/17/24
+//Main code for LinkedList2
+//Created by Tai Wong, Jan 2nd.
 
 
-
+using namespace LinkedList;
 using namespace std;
 
-// student struct to store Student data
-struct Student {
-  char firstName[80];
-  char lastName[80];
-  int studentID;
-  float gpa;
-};
+//function prototypes
+void addStudent(Node* &head);
+void insertStudent(Node* &head, Student* student);
+void printStudent(Node* head);
+void deleteStudent(Node* &head, int id);
+void averageGPA(Node* head, float &count, int &sCount);
 
-// function prototypes
-void addStudent(vector<Student*> &studentList);
-void printStudentList(const vector<Student*> &studentList);
-void deleteStudent(vector<Student*> &studentList, int id);
-
+//maim
 int main() {
-  bool run = true;
-  vector<Student*> studentList; // vector to store pointers to students
-
-  // loops code
-  while (run) {
-    cout << "Do you want to ADD, PRINT, DELETE, or QUIT?" << endl;
+  //creates head outside of loop for continuity
+  Node* head = NULL;
+   
+  while (true) {
+    //asks for command
+    cout << "What command?" << endl;
     char response[10];
     cin >> response;
-
+    //compares response and gives the corresponding action
     if (strcmp(response, "ADD") == 0) {
-      addStudent(studentList);
+      addStudent(head);
     } else if (strcmp(response, "PRINT") == 0) {
-      printStudentList(studentList);
+      printStudent(head);
     } else if (strcmp(response, "DELETE") == 0) {
-      cout << "What is their ID number?" << std::endl;
-      int id;
-      cin >> id;
-      deleteStudent(studentList, id);
+      cout << "What is the ID of the student?" << endl;
+      int deleteID;
+      cin >> deleteID;
+      deleteStudent(head, deleteID);
     } else if (strcmp(response, "QUIT") == 0) {
-      run = false;
-    } else {
-      cout << "Invalid Response" << std::endl;
+      return 0;
+    } else if (strcmp(response, "AVERAGE") == 0) {
+      float count = 0.0;
+      int sCount = 0;
+      averageGPA(head, count, sCount);
+      float roundedGPA = roundf((count / 2) * 100) / 100;
+
+      cout << "Average GPA is " << roundedGPA << endl;
+      
     }
   }
-
-  // free allocated memory before exiting
-  for (Student* student : studentList) {
-    delete student;
-  }
-  studentList.clear();
-
-  return 0;
 }
 
-// function to add a new student to the list
-void addStudent(vector<Student*> &studentList) {
-  Student* newStudent = new Student();
+//add student function
+void addStudent(Node* &head) {
+  cout << "First Name?" << endl;
+  char fName[80];
+  cin >> fName;
 
-  // get student information from user
-  cout << "What is their first name?" << std::endl;
-  cin >> newStudent->firstName;
+  cout << "Last Name?" << endl;
+  char lName[80];
+  cin >> lName;
 
-  cout << "What is their last name?" << std::endl;
-  cin >> newStudent->lastName;
+  cout << "ID#?" << endl;
+  int idNum;
+  cin >> idNum;
 
-  cout << "What is their student ID?" << std::endl;
-  cin >> newStudent->studentID;
-
-  cout << "What is their GPA?" << std::endl;
-  cin >> newStudent->gpa;
-
-  // add the new student to the list
-  studentList.push_back(newStudent);
+  cout << "GPA?" << endl;
+  float GPA;
+  cin >> GPA;
+  //inserts student into linked list recursively
+  Student* newStudent = new Student(fName, lName, idNum, GPA);
+  insertStudent(head, newStudent);
 }
 
-// function to print all students in the list
-void printStudentList(const vector<Student*> &studentList) {
-  // iterate over the student list
-  for (Student* x : studentList) {
-    // round GPA to two decimal places
-    float roundedGPA = roundf(x->gpa * 100) / 100;
-    cout << x->firstName << ' ' << x->lastName << ", " << x->studentID << ", " << roundedGPA << std::endl;
-  }
-}
-
-// function to delete a student by ID
-void deleteStudent(vector<Student*> &studentList, int id) {
-  int index = -1;
-
-  // loops through student list
-  for (int x = 0; x < studentList.size(); x++) {
-    //if it is equal to an id, sets index to it
-    if (studentList[x]->studentID == id) {
-      index = x;
-      break;
-    }
-  }
-
-  if (index != -1) {
-    delete studentList[index];
-    // remove the student from the vector
-    studentList.erase(studentList.begin() + index);
-    cout << "Student deleted." << endl;
+void insertStudent(Node* &head, Student* student) {
+  //inserts based on ID number, least to greatest
+  if (head == NULL || student->getID() < head->getStudent()->getID()) {
+    Node* newNode = new Node(student);
+    newNode->setNext(head);
+    head = newNode;
   } else {
-    cout << "Student ID not found." << endl;
+    Node* &nextNode = head->getNext();
+    insertStudent(nextNode, student);
   }
-} 
+}
+
+//prints student recursively
+void printStudent(Node* head) {
+  if (head == NULL) {
+    cout << "No Students Added" << endl;
+  } else {
+    Student* cStudent = head->getStudent();
+    float roundedGPA = roundf(cStudent->getGPA() * 100) / 100;
+    cout << cStudent->getFirstName() << ' ' << cStudent->getLastName() << ", " << cStudent->getID() << ", " << roundedGPA << endl;
+
+    if (head->getNext() != NULL) {
+      printStudent(head->getNext());
+    }
+  }
+}
+
+//deletes student recursively
+void deleteStudent(Node* &head, int id) {
+  if (head == NULL) {
+    cout << "No Students in List" << endl;
+    return;
+  }
+
+  if (head->getStudent()->getID() == id) {
+    Node* temp = head;
+    head = head->getNext();
+    delete temp;
+    return;
+  }
+  deleteStudent(head->getNext(), id);
+}
+
+//averages gpa of students recursively
+void averageGPA(Node* head, float &count, int &sCount) {
+  if (head == NULL) {
+    cout << "No Students Added" << endl;
+  } else {
+    Student* cStudent = head->getStudent();
+    float roundedGPA = roundf(cStudent->getGPA() * 100) / 100;
+    count += roundedGPA;
+    sCount += 1;
+    if (head->getNext() != NULL) {
+      averageGPA(head->getNext(), count, sCount);
+    }
+  }
+}
