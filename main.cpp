@@ -1,133 +1,93 @@
-#include "Student.h"
-#include "Node.h"
-
+#include "HashTable.h"
 #include <iostream>
-#include <cstring>
+#include <fstream>
+#include <cstdlib>
+#include <ctime>
 
-//Main code for LinkedList2
-//Created by Tai Wong, Jan 2nd.
-
-
-using namespace LinkedList;
 using namespace std;
 
-//function prototypes
-void addStudent(Node* &head);
-void insertStudent(Node* &head, Student* student);
-void printStudent(Node* head);
-void deleteStudent(Node* &head, int id);
-void averageGPA(Node* head, float &count, int &sCount);
+//main.cpp for the Hash Table
+//Created by Tai Wong, 2/6/25
 
-//maim
+//loads names from the text files
+void loadNames(char firstNames[][80], int& firstCount, char lastNames[][80], int& lastCount) {
+    ifstream firstFile("first_names.txt"), lastFile("last_names.txt");
+    firstCount = 0;
+    lastCount = 0;
+
+    while (firstFile >> firstNames[firstCount] && firstCount < 1000) firstCount++;
+    while (lastFile >> lastNames[lastCount] && lastCount < 1000) lastCount++;
+}
+
+//random student generator
+Student* generateRandomStudent(char firstNames[][80], int firstCount, char lastNames[][80], int lastCount, int& nextID) {
+  //self explanatory
+    char firstName[80], lastName[80];
+    strcpy(firstName, firstNames[rand() % firstCount]);
+    strcpy(lastName, lastNames[rand() % lastCount]);
+
+    float gpa = ((rand() % 301) / 100.0f) + 1.0f;
+    return new Student(firstName, lastName, nextID++, gpa);
+}
+
+//main function
 int main() {
-  //creates head outside of loop for continuity
-  Node* head = NULL;
-   
-  while (true) {
-    //asks for command
-    cout << "What command?" << endl;
-    char response[10];
-    cin >> response;
-    //compares response and gives the corresponding action
-    if (strcmp(response, "ADD") == 0) {
-      addStudent(head);
-    } else if (strcmp(response, "PRINT") == 0) {
-      printStudent(head);
-    } else if (strcmp(response, "DELETE") == 0) {
-      cout << "What is the ID of the student?" << endl;
-      int deleteID;
-      cin >> deleteID;
-      deleteStudent(head, deleteID);
-    } else if (strcmp(response, "QUIT") == 0) {
-      return 0;
-    } else if (strcmp(response, "AVERAGE") == 0) {
-      float count = 0.0;
-      int sCount = 0;
-      averageGPA(head, count, sCount);
-      float roundedGPA = roundf((count / 2) * 100) / 100;
+    srand(time(0));
+    HashTable students;
+    char firstNames[1000][80], lastNames[1000][80];
+    int firstCount = 0, lastCount = 0;
+    int nextID = 1;
+    //loads the text files
+    loadNames(firstNames, firstCount, lastNames, lastCount);
 
-      cout << "Average GPA is " << roundedGPA << endl;
-      
+    while (true) {
+        cout << "ADD, PRINT, DELETE, GENERATE, QUIT? ";
+        char command[10];
+        cin >> command;
+	//if ADD
+        if (strcmp(command, "ADD") == 0) {
+            char firstName[80], lastName[80];
+            int id;
+            float gpa;
+            cout << "First name: ";
+            cin >> firstName;
+            cout << "Last name: ";
+            cin >> lastName;
+            cout << "ID: ";
+            cin >> id;
+            cout << "GPA: ";
+            cin >> gpa;
+
+            students.addStudent(new Student(firstName, lastName, id, gpa));
+        }
+	//if PRINT
+        else if (strcmp(command, "PRINT") == 0) {
+            students.printStudents();
+        }
+	//if DELETE
+        else if (strcmp(command, "DELETE") == 0) {
+            int id;
+            cout << "Enter student ID: ";
+            cin >> id;
+            students.deleteStudent(id);
+        }
+	//if GENERATE
+        else if (strcmp(command, "GENERATE") == 0) {
+            int num;
+            cout << "How many students to generate? ";
+            cin >> num;
+
+            for (int i = 0; i < num; i++) {
+                students.addStudent(generateRandomStudent(firstNames, firstCount, lastNames, lastCount, nextID));
+            }
+            cout << num << " random students added." << endl;
+        }
+        else if (strcmp(command, "QUIT") == 0) {
+            break;
+        }
+        else {
+            cout << "Invalid command." << endl;
+        }
     }
-  }
-}
-
-//add student function
-void addStudent(Node* &head) {
-  cout << "First Name?" << endl;
-  char fName[80];
-  cin >> fName;
-
-  cout << "Last Name?" << endl;
-  char lName[80];
-  cin >> lName;
-
-  cout << "ID#?" << endl;
-  int idNum;
-  cin >> idNum;
-
-  cout << "GPA?" << endl;
-  float GPA;
-  cin >> GPA;
-  //inserts student into linked list recursively
-  Student* newStudent = new Student(fName, lName, idNum, GPA);
-  insertStudent(head, newStudent);
-}
-
-void insertStudent(Node* &head, Student* student) {
-  //inserts based on ID number, least to greatest
-  if (head == NULL || student->getID() < head->getStudent()->getID()) {
-    Node* newNode = new Node(student);
-    newNode->setNext(head);
-    head = newNode;
-  } else {
-    Node* &nextNode = head->getNext();
-    insertStudent(nextNode, student);
-  }
-}
-
-//prints student recursively
-void printStudent(Node* head) {
-  if (head == NULL) {
-    cout << "No Students Added" << endl;
-  } else {
-    Student* cStudent = head->getStudent();
-    float roundedGPA = roundf(cStudent->getGPA() * 100) / 100;
-    cout << cStudent->getFirstName() << ' ' << cStudent->getLastName() << ", " << cStudent->getID() << ", " << roundedGPA << endl;
-
-    if (head->getNext() != NULL) {
-      printStudent(head->getNext());
-    }
-  }
-}
-
-//deletes student recursively
-void deleteStudent(Node* &head, int id) {
-  if (head == NULL) {
-    cout << "No Students in List" << endl;
-    return;
-  }
-
-  if (head->getStudent()->getID() == id) {
-    Node* temp = head;
-    head = head->getNext();
-    delete temp;
-    return;
-  }
-  deleteStudent(head->getNext(), id);
-}
-
-//averages gpa of students recursively
-void averageGPA(Node* head, float &count, int &sCount) {
-  if (head == NULL) {
-    cout << "No Students Added" << endl;
-  } else {
-    Student* cStudent = head->getStudent();
-    float roundedGPA = roundf(cStudent->getGPA() * 100) / 100;
-    count += roundedGPA;
-    sCount += 1;
-    if (head->getNext() != NULL) {
-      averageGPA(head->getNext(), count, sCount);
-    }
-  }
+    return 0;
 }
